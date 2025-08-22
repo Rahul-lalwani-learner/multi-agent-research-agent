@@ -22,16 +22,67 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Global styles and small UI helpers
+def inject_styles():
+    st.markdown(
+        """
+        <style>
+        .main .block-container { padding-top: 1rem; padding-bottom: 2rem; }
+        h1, h2, h3 { letter-spacing: .2px; }
+        section[data-testid="stSidebar"] button { margin-bottom: .3rem; border-radius: 8px; }
+        .status-card { border: 1px solid rgba(49,51,63,.2); border-radius: 10px; padding: 12px 14px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+        .status-ok { border-left: 6px solid #16a34a; }
+        .status-warn { border-left: 6px solid #ef4444; }
+        .status-title { font-weight: 600; font-size: .9rem; margin-bottom: .25rem; }
+        .status-desc { color: #5e5f6e; font-size: .85rem; margin: 0; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .75rem; }
+        .badge-ok { background:#dcfce7; color:#166534; }
+        .badge-warn { background:#fee2e2; color:#991b1b; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+def render_status_card(title: str, ok: bool, desc: str):
+    css_class = "status-ok" if ok else "status-warn"
+    badge = "<span class='badge badge-ok'>OK</span>" if ok else "<span class='badge badge-warn'>Issue</span>"
+    st.markdown(
+        f"""
+        <div class="status-card {css_class}">
+            <div class="status-title"><span class="status-desc">{title}</span> {badge}</div>
+            <p class="status-desc">{desc}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def main():
+    inject_styles()
     st.title("🔬 Multi-Agent Research Assistant")
     st.markdown("---")
     
-    # Sidebar for navigation
+    # Sidebar for navigation (buttons)
     st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox(
-        "Choose a page:",
-        ["🏠 Home", "🧪 Test Phase 2", "📥 Fetch ArXiv", "📄 Upload PDF", "❓ Query Papers", "🤖 Agent Workflow"]
-    )
+    if "nav_page" not in st.session_state:
+        st.session_state.nav_page = "🏠 Home"
+
+    col_a, col_b = st.sidebar.columns(2)
+    with col_a:
+        if st.button("🏠 Home", use_container_width=True):
+            st.session_state.nav_page = "🏠 Home"
+        if st.button("📥 ArXiv", use_container_width=True):
+            st.session_state.nav_page = "📥 Fetch ArXiv"
+        if st.button("❓ Query", use_container_width=True):
+            st.session_state.nav_page = "❓ Query Papers"
+    with col_b:
+        if st.button("🧪 Test", use_container_width=True):
+            st.session_state.nav_page = "🧪 Test Phase 2"
+        if st.button("📄 Upload", use_container_width=True):
+            st.session_state.nav_page = "📄 Upload PDF"
+        if st.button("🤖 Agents", use_container_width=True):
+            st.session_state.nav_page = "🤖 Agent Workflow"
+
+    page = st.session_state.nav_page
     
     # Status indicators in sidebar
     st.sidebar.markdown("---")
@@ -64,6 +115,7 @@ def main():
         return
     
     # Test Phase 2 components (lazy initialization)
+    vs_ok = True
     try:
         from core.embeddings import embedding_manager
         from core.vector_store import vector_store_manager
@@ -74,6 +126,16 @@ def main():
     except Exception as e:
         st.sidebar.error("❌ Phase 2 Failed")
         logger.error(f"Phase 2 import error: {e}")
+        vs_ok = False
+
+    # Top status cards
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        render_status_card("Configuration", True, "Environment and API keys loaded")
+    with c2:
+        render_status_card("Database", True, "PostgreSQL connectivity and tables ready")
+    with c3:
+        render_status_card("Vector Store", vs_ok, "Chroma client available for retrieval")
     
     # Page routing
     if page == "🏠 Home":

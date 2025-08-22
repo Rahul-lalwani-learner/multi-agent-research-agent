@@ -108,11 +108,23 @@ def show_test_embeddings_page():
     with col2:
         st.write("**Search test documents:**")
         query = st.text_input("Enter search query:", "machine learning")
+        topk = st.slider("Top-k", 1, 10, 5)
+        use_mmr = st.checkbox("Use MMR (diversified) retrieval", value=True)
+        only_test = st.checkbox("Filter to test docs only", value=False)
         
         if st.button("Search"):
             with st.spinner("Searching..."):
                 try:
-                    results = vector_store_manager.similarity_search(query, k=3)
+                    where = {"test": True} if only_test else None
+                    if use_mmr:
+                        retriever = vector_store_manager.get_retriever(k=topk, search_type="mmr")
+                        # Note: retriever does not support filter, so we fallback to similarity when filtering is required
+                        if where is None:
+                            results = retriever.get_relevant_documents(query)
+                        else:
+                            results = vector_store_manager.similarity_search(query, k=topk, where_filter=where)
+                    else:
+                        results = vector_store_manager.similarity_search(query, k=topk, where_filter=where)
                     
                     st.write(f"**Found {len(results)} results:**")
                     for i, doc in enumerate(results, 1):

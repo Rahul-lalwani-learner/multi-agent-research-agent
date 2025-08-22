@@ -110,7 +110,7 @@ class VectorStoreManager:
             logger.error(f"Failed to add texts to vector store: {e}")
             raise
     
-    def similarity_search(self, query: str, k: int = None) -> List[Document]:
+    def similarity_search(self, query: str, k: int = None, where_filter: Optional[Dict[str, Any]] = None) -> List[Document]:
         """
         Perform similarity search
         
@@ -126,7 +126,12 @@ class VectorStoreManager:
                 self._initialize_chroma()
             
             k = k or config.RETRIEVER_K
-            results = self.vector_store.similarity_search(query, k=k)
+            # Pass through optional metadata filter if provided
+            try:
+                results = self.vector_store.similarity_search(query, k=k, filter=where_filter)
+            except TypeError:
+                # Older langchain-chroma may not support filter kw; fallback without it
+                results = self.vector_store.similarity_search(query, k=k)
             
             logger.debug(f"Found {len(results)} similar documents for query: {query[:50]}...")
             return results
@@ -135,7 +140,7 @@ class VectorStoreManager:
             logger.error(f"Failed to perform similarity search: {e}")
             raise
     
-    def similarity_search_with_score(self, query: str, k: int = None) -> List[tuple]:
+    def similarity_search_with_score(self, query: str, k: int = None, where_filter: Optional[Dict[str, Any]] = None) -> List[tuple]:
         """
         Perform similarity search with scores
         
@@ -151,7 +156,10 @@ class VectorStoreManager:
                 self._initialize_chroma()
             
             k = k or config.RETRIEVER_K
-            results = self.vector_store.similarity_search_with_score(query, k=k)
+            try:
+                results = self.vector_store.similarity_search_with_score(query, k=k, filter=where_filter)
+            except TypeError:
+                results = self.vector_store.similarity_search_with_score(query, k=k)
             
             logger.debug(f"Found {len(results)} similar documents with scores for query: {query[:50]}...")
             return results
