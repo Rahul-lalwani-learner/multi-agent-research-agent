@@ -22,6 +22,7 @@ def _build_llm() -> ChatGoogleGenerativeAI:
         raise ValueError("GOOGLE_API_KEY is required for RAG")
     os.environ["GOOGLE_API_KEY"] = config.GOOGLE_API_KEY
     # Use REST transport to avoid asyncio loop issues in Streamlit
+    # Changed the model to gemini-2.5-flash
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2, transport="rest")
 
 
