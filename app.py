@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils.config import config, validate_config
 from utils.logger import logger
 from core.db import init_db, test_db_connection
+from ui.test_embeddings import show_test_embeddings_page
 
 # Page configuration
 st.set_page_config(
@@ -25,7 +26,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Choose a page:",
-        ["🏠 Home", "📥 Fetch ArXiv", "📄 Upload PDF", "❓ Query Papers", "🤖 Agent Workflow"]
+        ["🏠 Home", "🧪 Test Phase 2", "📥 Fetch ArXiv", "📄 Upload PDF", "❓ Query Papers", "🤖 Agent Workflow"]
     )
     
     # Status indicators in sidebar
@@ -58,9 +59,24 @@ def main():
         st.error(f"Failed to initialize database: {e}")
         return
     
+    # Test Phase 2 components (lazy initialization)
+    try:
+        from core.embeddings import embedding_manager
+        from core.vector_store import vector_store_manager
+        
+        # Show Phase 2 status as "Ready" - will be tested when actually used
+        st.sidebar.info("🔄 Embeddings Ready (lazy init)")
+        st.sidebar.info("🔄 ChromaDB Ready (lazy init)")
+            
+    except Exception as e:
+        st.sidebar.error("❌ Phase 2 Failed")
+        logger.error(f"Phase 2 import error: {e}")
+    
     # Page routing
     if page == "🏠 Home":
         show_home_page()
+    elif page == "🧪 Test Phase 2":
+        show_test_phase2_page()
     elif page == "📥 Fetch ArXiv":
         show_fetch_arxiv_page()
     elif page == "📄 Upload PDF":
@@ -109,8 +125,8 @@ def show_home_page():
         """)
         
         st.warning("""
-        **Note**: This is Phase 1 of development. 
-        Some features are still being implemented.
+        **Note**: This is Phase 2 of development. 
+        Embeddings and vector storage are now implemented.
         """)
 
 def show_fetch_arxiv_page():
@@ -145,6 +161,9 @@ def show_query_papers_page():
     
     if st.button("Get Answer"):
         st.info("RAG-powered Q&A will be implemented in Phase 5")
+
+def show_test_phase2_page():
+    show_test_embeddings_page()
 
 def show_agent_workflow_page():
     st.header("🤖 Multi-Agent Workflow")
