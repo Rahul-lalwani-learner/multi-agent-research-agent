@@ -79,7 +79,7 @@ def main():
             st.session_state.nav_page = "🧪 Test Phase 2"
         if st.button("📄 Upload", use_container_width=True):
             st.session_state.nav_page = "📄 Upload PDF"
-        if st.button("🤖 Agents", use_container_width=True):
+        if st.button("🔥 Agents", use_container_width=True):
             st.session_state.nav_page = "🔥 Agent Workflow"
 
     st.sidebar.markdown("---")
