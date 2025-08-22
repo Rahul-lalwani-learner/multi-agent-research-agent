@@ -1,47 +1,57 @@
+
 # 🔬 Multi-Agent Research Assistant
 
-A Streamlit-based research paper assistant that can fetch papers from ArXiv, store them in PostgreSQL, create embeddings in ChromaDB, and run a multi-agent pipeline for research analysis.
+A modern, multi-agent research assistant built with Streamlit, LangChain, Google Gemini, ChromaDB, and Railway PostgreSQL. This tool enables you to fetch, store, analyze, and synthesize research papers using advanced LLM-powered agents and RAG (Retrieval-Augmented Generation) techniques.
+
+---
 
 ## 🚀 Features
 
-- **📥 ArXiv Integration**: Fetch research papers using natural language queries
-- **📚 Smart Storage**: Store papers and metadata in Railway PostgreSQL
-- **🔍 Vector Search**: Full-text embeddings stored in ChromaDB
-- **🤖 Multi-Agent Analysis**: Intelligent pipeline for research synthesis
-- **💬 RAG-powered Q&A**: Ask questions about your research corpus
-- **📄 PDF Processing**: Upload and parse local PDF files
+- **📥 ArXiv Integration**: Search and fetch research papers from ArXiv using natural language queries.
+- **📚 Smart Storage**: Store papers and metadata in PostgreSQL; chunk and embed text in ChromaDB for semantic search.
+- **🔍 Vector Search**: Fast, full-text similarity search over your research corpus.
+- **📄 PDF Processing**: Upload and parse local PDF files, chunking and embedding their content.
+- **💬 RAG Q&A**: Ask questions about your stored papers and get LLM-generated answers with citations.
+- **🤖 Multi-Agent Workflow**: Run a pipeline of agents to cluster, summarize, hypothesize, and design experiments from your corpus.
+- **🗑️ Data Management**: Remove all data from both the vector store and SQL database with a single click.
+
+---
 
 ## 🏗️ Architecture
 
 ```
 Frontend: Streamlit
 ├── LLM: Google Gemini (via LangChain)
-├── Vector DB: ChromaDB (local persisted)
+├── Vector DB: ChromaDB (local, persisted)
 ├── Database: Railway PostgreSQL
 ├── PDF Parsing: PyMuPDF
-└── Orchestration: LangChain Agents
+└── Orchestration: LangChain Agents (Cluster, Summarizer, Hypothesis, Experiment)
 ```
+
+---
 
 ## 📋 Prerequisites
 
 - Python 3.8+
-- Railway PostgreSQL database
+- Railway PostgreSQL database (or compatible Postgres)
 - Google Generative AI API key
 - ArXiv API access (free)
+
+---
 
 ## 🛠️ Installation
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd research_assistant_project
+   cd Research_agent_project
    ```
 
 2. **Install dependencies**
    ```bash
    pip install virtualenv
    virtualenv venv
-   ./venv/Scripts/activate
+   ./venv/Scripts/activate  # On Windows
    pip install -r requirements.txt
    ```
 
@@ -50,10 +60,10 @@ Frontend: Streamlit
    ```env
    # Database
    DATABASE_URL=postgresql://username:password@host:port/database
-   
+
    # Google Generative AI
    GOOGLE_API_KEY=your_google_api_key_here
-   
+
    # Optional: Customize settings
    CHROMA_PERSIST_DIRECTORY=./chroma_db
    ARXIV_MAX_RESULTS=50
@@ -68,6 +78,8 @@ Frontend: Streamlit
    python -c "from core.db import init_db; init_db()"
    ```
 
+---
+
 ## 🚀 Usage
 
 1. **Start the Streamlit app**
@@ -75,12 +87,16 @@ Frontend: Streamlit
    streamlit run app.py
    ```
 
-2. **Navigate through the pages**:
+2. **Navigate through the UI:**
    - **🏠 Home**: Overview and system status
-   - **📥 Fetch ArXiv**: Search and download papers
-   - **📄 Upload PDF**: Upload local PDF files
-   - **❓ Query Papers**: RAG-powered Q&A
-   - **🤖 Agent Workflow**: Multi-agent research analysis
+   - **📥 Fetch ArXiv**: Search and download papers from ArXiv
+   - **📄 Upload PDF**: Upload and parse local PDF files
+   - **❓ Query Papers**: RAG-powered Q&A over your corpus
+   - **🔥 Agent Workflow**: Multi-agent research analysis pipeline
+   - **🧪 Test**: Embeddings and vector store diagnostics
+   - **🗑️ Remove ALL Data**: Clear all data from both SQL and vector store
+
+---
 
 ## 📊 Database Schema
 
@@ -109,37 +125,46 @@ Frontend: Streamlit
 - `hypotheses`: Generated hypotheses
 - `experiment_plans`: Experimental designs
 
+---
+
 ## 🔄 Multi-Agent Pipeline
 
 The system implements a sequential orchestrator with specialized agents:
 
-1. **Cluster Agent**: Groups papers by topic using embeddings
-2. **Summarizer Agent**: Creates structured summaries per cluster
-3. **Hypothesis Agent**: Proposes testable hypotheses with citations
-4. **Experiment Agent**: Designs experimental plans for hypotheses
+1. **Cluster Agent**: Groups papers by topic using embeddings and LLMs.
+2. **Summarizer Agent**: Creates structured summaries for each cluster.
+3. **Hypothesis Agent**: Proposes testable hypotheses with supporting citations.
+4. **Experiment Agent**: Designs experimental plans for each hypothesis.
+
+---
 
 ## 🧪 Development Phases
 
-- **Phase 1**: ✅ Config, DB, basic UI
+- **Phase 1**: Config, DB, basic UI
 - **Phase 2**: ChromaDB + Embeddings
 - **Phase 3**: ArXiv ingestion
 - **Phase 4**: PDF parsing
 - **Phase 5**: RAG Q&A
 - **Phase 6**: Multi-agent workflow
 
+---
+
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Required |
-| `GOOGLE_API_KEY` | Google Generative AI API key | Required |
-| `CHROMA_PERSIST_DIRECTORY` | ChromaDB storage path | `./chroma_db` |
-| `ARXIV_MAX_RESULTS` | Max ArXiv results | `50` |
-| `CHUNK_SIZE` | Text chunk size | `1200` |
-| `CHUNK_OVERLAP` | Chunk overlap | `200` |
-| `RETRIEVER_K` | RAG retrieval count | `5` |
+| Variable                | Description                        | Default           |
+|-------------------------|------------------------------------|-------------------|
+| `DATABASE_URL`          | PostgreSQL connection string       | Required          |
+| `GOOGLE_API_KEY`        | Google Generative AI API key       | Required          |
+| `CHROMA_PERSIST_DIRECTORY` | ChromaDB storage path           | `./chroma_db`     |
+| `ARXIV_MAX_RESULTS`     | Max ArXiv results                  | `50`              |
+| `CHUNK_SIZE`            | Text chunk size                    | `1200`            |
+| `CHUNK_OVERLAP`         | Chunk overlap                      | `200`             |
+| `RETRIEVER_K`           | RAG retrieval count                | `5`               |
+| `DEFAULT_PAPER_LIMIT`   | Default number of papers for agents| `20`              |
+
+---
 
 ## 🐛 Troubleshooting
 
@@ -158,9 +183,13 @@ The system implements a sequential orchestrator with specialized agents:
    - Check disk space for `CHROMA_PERSIST_DIRECTORY`
    - Ensure write permissions to the directory
 
+---
+
 ## 📝 License
 
 This project is licensed under the MIT License.
+
+---
 
 ## 🤝 Contributing
 
@@ -169,6 +198,8 @@ This project is licensed under the MIT License.
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+---
 
 ## 📞 Support
 
