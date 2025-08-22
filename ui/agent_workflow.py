@@ -8,16 +8,29 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.config import config
 from utils.logger import logger
 from core.agents.planner_agent import ResearchPlanner
+from core.user_manager import user_manager
 
 
 def show_agent_workflow_page():
     st.header("🔥 Multi-Agent Workflow")
     st.markdown("---")
+    
+    # Get current user
+    current_user_id = user_manager.get_current_user_id()
+    current_username = user_manager.get_current_username()
+    
+    # Show user context
+    if current_username:
+        st.info(f"🤖 Running workflow for **{current_username}'s** paper collection")
+    else:
+        st.info(f"🤖 Running workflow for your paper collection (User ID: {current_user_id[:8]}...)")
 
     topic = st.text_input("Topic / scope", placeholder="e.g., foundation models for medical imaging")
     k = st.slider("Number of papers (k)", 5, 50, config.DEFAULT_PAPER_LIMIT)
-
-    cluster_method = st.selectbox("Cluster method", ["auto (LLM)"], index=0)
+    st.warning(
+        "If you select more papers than are currently in your database, "
+        "the system will fetch additional papers from Arxiv, which may take more time."
+    )
 
     if st.button("Run Workflow"):
         if not topic.strip():
@@ -26,7 +39,12 @@ def show_agent_workflow_page():
         with st.spinner("Running multi-agent workflow..."):
             try:
                 planner = ResearchPlanner()
-                result = planner.run_research_workflow(topic_query=topic, k=k)
+                # Pass user_id to the workflow
+                result = planner.run_research_workflow(
+                    topic_query=topic, 
+                    k=k, 
+                    user_id=current_user_id
+                )
 
                 st.success(f"✅ Completed run: {result['run_id']}")
 

@@ -32,7 +32,7 @@ class Config:
     RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
     
     # Agent Workflow
-    DEFAULT_PAPER_LIMIT = int(os.getenv("DEFAULT_PAPER_LIMIT", "20"))
+    DEFAULT_PAPER_LIMIT = int(os.getenv("DEFAULT_PAPER_LIMIT", "5"))
 
 # Global config instance
 config = Config()

@@ -166,7 +166,49 @@ The system implements a sequential orchestrator with specialized agents:
 
 ---
 
-## 🐛 Troubleshooting
+## �️ Administrative Scripts
+
+### User Isolation Migration
+```bash
+# Run once to add user isolation to existing database
+python migrate_user_isolation.py
+```
+
+### Data Management Scripts
+
+**Safe Administrative Reset** (with confirmation):
+```bash
+# Interactive script with safety prompts
+python admin_clear_all_data.py
+
+# Skip confirmation (use with caution)
+python admin_clear_all_data.py --confirm
+```
+
+**Quick Development Reset** (no confirmation):
+```bash
+# Fast reset for development - NO CONFIRMATION!
+python dev_reset.py
+```
+
+⚠️ **WARNING**: These scripts will delete ALL user data from both SQL database and ChromaDB vector store. Use with extreme caution in production!
+
+### What Gets Deleted:
+- All papers from all users
+- All text chunks and embeddings
+- All cluster results 
+- All hypotheses
+- All experiment plans
+- All ChromaDB collections
+
+### When to Use:
+- **admin_clear_all_data.py**: Production resets, major testing, system maintenance
+- **dev_reset.py**: Quick development cycles, testing new features
+- **migrate_user_isolation.py**: One-time migration to add user isolation
+
+---
+
+## �🐛 Troubleshooting
 
 ### Common Issues
 

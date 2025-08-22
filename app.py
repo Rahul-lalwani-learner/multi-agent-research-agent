@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils.config import config, validate_config
 from utils.logger import logger
 from core.db import init_db, test_db_connection
+from core.user_manager import user_manager
 from ui.test_embeddings import show_test_embeddings_page
 from ui.fetch_arxiv import show_fetch_arxiv_page
 from ui.upload_paper import show_upload_paper_page
@@ -61,7 +62,51 @@ def main():
     st.title("🔬 Multi-Agent Research Assistant")
     st.markdown("---")
     
+    # User Management Section
+    current_user_id = user_manager.get_current_user_id()
+    current_username = user_manager.get_current_username()
+    
+    # Display current user info
+    if current_username:
+        st.sidebar.info(f"👤 **User:** {current_username}\n\n🆔 **ID:** {current_user_id[:8]}...")
+    else:
+        st.sidebar.info(f"👤 **User ID:** {current_user_id[:8]}...")
+    
+    # User management controls
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("👤 User Management")
+    
+    # Set username
+    if not current_username:
+        username_input = st.sidebar.text_input("Set your username:", placeholder="Enter a friendly name")
+        if st.sidebar.button("Set Username") and username_input:
+            user_manager.set_username(username_input)
+            st.sidebar.success(f"Username set to: {username_input}")
+            st.rerun()
+    else:
+        if st.sidebar.button("Change Username"):
+            user_manager.set_username("")
+            st.rerun()
+    
+    # Show user data stats
+    try:
+        from core.db_utils import get_user_stats
+        from core.vector_utils import get_user_vector_stats
+        
+        db_stats = get_user_stats(current_user_id)
+        vector_stats = get_user_vector_stats(current_user_id)
+        
+        if db_stats or vector_stats:
+            with st.sidebar.expander("📊 Your Data"):
+                st.write(f"Papers: {db_stats.get('papers', 0)}")
+                st.write(f"Text Chunks: {db_stats.get('chunks', 0)}")
+                st.write(f"Vector Docs: {vector_stats.get('document_count', 0)}")
+                st.write(f"Hypotheses: {db_stats.get('hypotheses', 0)}")
+    except Exception as e:
+        logger.error(f"Error getting user stats: {e}")
+    
     # Sidebar for navigation (buttons)
+    st.sidebar.markdown("---")
     st.sidebar.title("Navigation")
     if "nav_page" not in st.session_state:
         st.session_state.nav_page = "🏠 Home"
@@ -83,19 +128,38 @@ def main():
             st.session_state.nav_page = "🔥 Agent Workflow"
 
     st.sidebar.markdown("---")
-    if st.sidebar.button("🗑️ Remove ALL Data", use_container_width=True):
-        from core.db_utils import delete_all_data
-        from core.vector_utils import delete_all_vector_store
-        sql_ok = delete_all_data()
-        vector_ok = delete_all_vector_store()
-        if sql_ok and vector_ok:
-            st.sidebar.success("All data removed from SQL and vector store.")
-        elif not sql_ok and not vector_ok:
-            st.sidebar.error("Failed to remove data from both SQL and vector store.")
-        elif not sql_ok:
-            st.sidebar.error("Failed to remove data from SQL database.")
-        elif not vector_ok:
-            st.sidebar.error("Failed to remove data from vector store.")
+    
+    # Data management section
+    if st.sidebar.button("🗑️ Clear My Data", use_container_width=True):
+        from core.db_utils import delete_user_data, get_user_stats
+        from core.vector_utils import delete_user_vector_store, get_user_vector_stats
+        
+        # Get stats before deletion to show what was deleted
+        try:
+            before_db_stats = get_user_stats(current_user_id)
+            before_vector_stats = get_user_vector_stats(current_user_id)
+            
+            sql_ok = delete_user_data(current_user_id)
+            vector_ok = delete_user_vector_store(current_user_id)
+            
+            if sql_ok and vector_ok:
+                total_papers = before_db_stats.get('papers', 0)
+                total_chunks = before_db_stats.get('chunks', 0)
+                total_vectors = before_vector_stats.get('document_count', 0)
+                
+                if total_papers > 0 or total_chunks > 0 or total_vectors > 0:
+                    st.sidebar.success(f"✅ Cleared: {total_papers} papers, {total_chunks} chunks, {total_vectors} vectors")
+                else:
+                    st.sidebar.info("✅ No data to clear - your workspace was already empty")
+            elif not sql_ok and not vector_ok:
+                st.sidebar.error("❌ Failed to remove your data from both stores.")
+            elif not sql_ok:
+                st.sidebar.error("❌ Failed to remove your data from SQL database.")
+            elif not vector_ok:
+                st.sidebar.error("❌ Failed to remove your data from vector store.")
+        except Exception as e:
+            st.sidebar.error(f"❌ Error clearing data: {e}")
+            logger.error(f"Error clearing user data: {e}")
 
     page = st.session_state.nav_page
     

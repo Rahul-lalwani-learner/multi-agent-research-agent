@@ -10,11 +10,14 @@ class ClusterAgent:
     def __init__(self):
         self.llm = get_llm()
 
-    def run(self, run_id: str, session: Session, topic: str, limit: int = 20) -> List[Cluster]:
+    def run(self, run_id: str, session: Session, topic: str, limit: int = 20, user_id: str = None) -> List[Cluster]:
+        if user_id is None:
+            raise ValueError("user_id is required for user isolation")
+            
         # Prefer semantic pre-filter via Chroma to keep results on-topic
         candidate_ids: List[int] = []
         try:
-            results = vector_store_manager.similarity_search(topic, k=max(limit * 3, limit))
+            results = vector_store_manager.similarity_search(topic, user_id=user_id, k=max(limit * 3, limit))
             seen: Set[int] = set()
             for doc in results:
                 meta = getattr(doc, "metadata", {}) or {}
@@ -22,11 +25,11 @@ class ClusterAgent:
                 if isinstance(pid, int) and pid not in seen:
                     seen.add(pid)
                     candidate_ids.append(pid)
-            logger.debug(f"ClusterAgent semantic prefilter collected {len(candidate_ids)} paper_ids")
+            logger.debug(f"ClusterAgent semantic prefilter collected {len(candidate_ids)} paper_ids for user {user_id}")
         except Exception as e:
             logger.warning(f"ClusterAgent semantic prefilter failed: {e}")
 
-        q = session.query(Paper).filter(Paper.title.isnot(None))
+        q = session.query(Paper).filter(Paper.title.isnot(None), Paper.user_id == user_id)
         if candidate_ids:
             q = q.filter(Paper.id.in_(candidate_ids))
         else:

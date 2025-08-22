@@ -26,13 +26,24 @@ def _build_llm() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2, transport="rest")
 
 
-def answer_query(question: str, retriever, k: int = None) -> Dict[str, Any]:
+def answer_query(question: str, retriever=None, user_id: str = None, k: int = None) -> Dict[str, Any]:
     """
     Run retrieval-augmented generation over the stored corpus.
-
+    
+    Args:
+        question: The user's question
+        retriever: Optional retriever object (if not provided, will create user-specific retriever)
+        user_id: User ID for isolation (optional, will use current user if not provided)
+        k: Number of documents to retrieve
+        
     Returns a dict: { answer, citations: [{title, arxiv_id, link}], contexts }
     """
     k = k or config.RETRIEVER_K
+
+    # If no retriever provided, create a user-specific one
+    if retriever is None:
+        from core.vector_store import vector_store_manager
+        retriever = vector_store_manager.get_retriever(user_id=user_id, k=k)
 
     # Retrieve top-k documents
     contexts = retriever.invoke(question)

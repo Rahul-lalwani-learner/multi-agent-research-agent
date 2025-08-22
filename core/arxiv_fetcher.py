@@ -77,14 +77,19 @@ def fetch_from_arxiv(query: str, top_k: int) -> List[Document]:
     return docs
 
 
-def upsert_paper(session: Session, fields: dict) -> Tuple[Paper, bool]:
+def upsert_paper(session: Session, fields: dict, user_id: str) -> Tuple[Paper, bool]:
     arxiv_id = fields.get("arxiv_id")
     paper = None
     created = False
     if arxiv_id:
-        paper = session.query(Paper).filter(Paper.arxiv_id == arxiv_id).one_or_none()
+        # Check for existing paper for this user and arxiv_id
+        paper = session.query(Paper).filter(
+            Paper.arxiv_id == arxiv_id,
+            Paper.user_id == user_id
+        ).one_or_none()
     if paper is None:
         paper = Paper(
+            user_id=user_id,  # Add user_id for isolation
             arxiv_id=arxiv_id,
             title=fields.get("title", "Untitled"),
             authors=fields.get("authors", ""),
@@ -107,11 +112,12 @@ def upsert_paper(session: Session, fields: dict) -> Tuple[Paper, bool]:
     return paper, created
 
 
-def embed_abstract(session: Session, paper: Paper) -> Optional[str]:
+def embed_abstract(session: Session, paper: Paper, user_id: str) -> Optional[str]:
     if not paper.summary:
         return None
     # Create a chunk record for the abstract
     chunk = Chunk(
+        user_id=user_id,  # Add user_id for isolation
         paper_id=paper.id,
         order=0,
         text=paper.summary,
@@ -120,13 +126,19 @@ def embed_abstract(session: Session, paper: Paper) -> Optional[str]:
     session.flush()
 
     meta = {
+        "user_id": user_id,  # Add user_id to metadata
         "paper_id": paper.id,
         "arxiv_id": paper.arxiv_id,
         "title": paper.title,
         "order": 0,
         "source": "arxiv",
     }
-    ids = vector_store_manager.add_texts(texts=[paper.summary], metadatas=[meta], ids=[f"paper-{paper.id}-abs"])
+    ids = vector_store_manager.add_texts(
+        texts=[paper.summary], 
+        metadatas=[meta], 
+        ids=[f"paper-{paper.id}-abs"],
+        user_id=user_id  # Pass user_id to vector store
+    )
     if ids and len(ids) > 0:
         chunk.chroma_doc_id = ids[0]
     paper.ingested = True
@@ -134,13 +146,23 @@ def embed_abstract(session: Session, paper: Paper) -> Optional[str]:
     return chunk.chroma_doc_id
 
 
-def fetch_and_store(query: str, session: Session, top_k: int = 10, embed_abstracts_only: bool = True) -> Tuple[int, int, List[str]]:
+def fetch_and_store(query: str, session: Session, top_k: int = 10, embed_abstracts_only: bool = True, user_id: str = None) -> Tuple[int, int, List[str]]:
     """
     Fetch papers from arXiv and upsert into DB. Optionally embed abstracts now.
+
+    Args:
+        query: Search query for arXiv
+        session: Database session
+        top_k: Maximum number of papers to fetch
+        embed_abstracts_only: Whether to embed abstracts immediately
+        user_id: User ID for isolation (required)
 
     Returns:
         (num_processed, num_embeddings_added, titles)
     """
+    if user_id is None:
+        raise ValueError("user_id is required for user isolation")
+    
     docs = fetch_from_arxiv(query, top_k)
     processed = 0
     embedded = 0
@@ -148,7 +170,7 @@ def fetch_and_store(query: str, session: Session, top_k: int = 10, embed_abstrac
     for doc in docs:
         try:
             fields = _extract_arxiv_fields(doc)
-            paper, created = upsert_paper(session, fields)
+            paper, created = upsert_paper(session, fields, user_id)
             session.commit()
             processed += 1
             titles.append(paper.title)
@@ -156,7 +178,7 @@ def fetch_and_store(query: str, session: Session, top_k: int = 10, embed_abstrac
             if embed_abstracts_only and paper.summary:
                 # Avoid re-embedding duplicates
                 if not paper.embedded:
-                    embed_abstract(session, paper)
+                    embed_abstract(session, paper, user_id)
                     session.commit()
                     embedded += 1
         except Exception as e:
@@ -164,5 +186,5 @@ def fetch_and_store(query: str, session: Session, top_k: int = 10, embed_abstrac
             logger.error(f"Failed processing a paper: {e}")
             continue
 
-    logger.info(f"Processed {processed} papers; embedded {embedded} abstracts.")
+    logger.info(f"Processed {processed} papers; embedded {embedded} abstracts for user {user_id}.")
     return processed, embedded, titles

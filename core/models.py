@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .db import Base
@@ -7,7 +7,8 @@ class Paper(Base):
     __tablename__ = "papers"
     
     id = Column(Integer, primary_key=True)
-    arxiv_id = Column(String, unique=True, index=True)        # e.g. 2401.01234
+    user_id = Column(String, nullable=False, index=True)       # User isolation
+    arxiv_id = Column(String, index=True)                      # e.g. 2401.01234
     title = Column(Text, nullable=False)
     authors = Column(Text)                                     # "A, B, C"
     summary = Column(Text)                                     # arXiv abstract
@@ -20,11 +21,17 @@ class Paper(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     chunks = relationship("Chunk", back_populates="paper", cascade="all, delete-orphan")
+    
+    # Composite unique constraint for user_id + arxiv_id (where arxiv_id is not null)
+    __table_args__ = (
+        Index('ix_papers_user_arxiv', 'user_id', 'arxiv_id'),
+    )
 
 class Chunk(Base):
     __tablename__ = "chunks"
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)       # User isolation
     paper_id = Column(Integer, ForeignKey("papers.id"), index=True)
     order = Column(Integer)                                    # chunk order
     text = Column(Text)
@@ -37,6 +44,7 @@ class ClusterResult(Base):
     __tablename__ = "cluster_results"
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)       # User isolation
     run_id = Column(String, index=True)                        # workflow run
     cluster_label = Column(String)
     paper_ids_csv = Column(Text)                               # "1,2,3"
@@ -46,6 +54,7 @@ class Hypothesis(Base):
     __tablename__ = "hypotheses"
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)       # User isolation
     run_id = Column(String, index=True)
     text = Column(Text)                                        # hypothesis text
     supports = Column(Text)                                    # cited papers
@@ -54,6 +63,7 @@ class ExperimentPlan(Base):
     __tablename__ = "experiment_plans"
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)       # User isolation
     run_id = Column(String, index=True)
     hypothesis_id = Column(Integer, index=True)
     plan = Column(Text)                                        # steps, metrics

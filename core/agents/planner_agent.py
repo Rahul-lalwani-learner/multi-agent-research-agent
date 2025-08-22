@@ -13,15 +13,17 @@ from .base_agent import Cluster, ClusterSummary, HypothesisOut, ExperimentPlanOu
 
 
 class ResearchPlanner:
-    def __init__(self):
+    def __init__(self, user_id: str = None):
+        self.user_id = user_id
         self.cluster_agent = ClusterAgent()
         self.summarizer_agent = SummarizerAgent()
         self.hypothesis_agent = HypothesisAgent()
         self.experiment_agent = ExperimentAgent()
         self.logs: List[str] = []
 
-    def _ensure_corpus(self, session: Session, topic_query: str, top_k: int) -> None:
-        existing = session.query(Paper).count()
+    def _ensure_corpus(self, session: Session, topic_query: str, top_k: int, user_id: str) -> None:
+        # Check if user has enough papers
+        existing = session.query(Paper).filter(Paper.user_id == user_id).count()
         if existing >= top_k:
             return
         try:
@@ -30,8 +32,9 @@ class ResearchPlanner:
                 session=session,
                 top_k=top_k,
                 embed_abstracts_only=True,
+                user_id=user_id,  # Pass user_id to fetch_and_store
             )
-            msg = f"Corpus ensured. processed={processed}, embedded={embedded}"
+            msg = f"Corpus ensured for user {user_id}. processed={processed}, embedded={embedded}"
             logger.info(msg)
             self.logs.append(msg)
         except Exception as e:
@@ -43,6 +46,7 @@ class ResearchPlanner:
         self,
         session: Session,
         run_id: str,
+        user_id: str,
         clusters: List[Cluster],
         hypotheses: List[HypothesisOut],
         plans: List[ExperimentPlanOut],
@@ -50,6 +54,7 @@ class ResearchPlanner:
         # persist clusters
         for c in clusters:
             row = ClusterResult(
+                user_id=user_id,
                 run_id=run_id,
                 cluster_label=c.label,
                 paper_ids_csv=",".join(str(pid) for pid in c.paper_ids),
@@ -62,6 +67,7 @@ class ResearchPlanner:
         hyp_rows: List[HypothesisModel] = []
         for h in hypotheses:
             row = HypothesisModel(
+                user_id=user_id,
                 run_id=run_id,
                 text=h.text,
                 supports="\n".join(h.supporting_papers),
@@ -79,6 +85,7 @@ class ResearchPlanner:
                     hyp_id = hr.id
                     break
             row = ExperimentPlanModel(
+                user_id=user_id,
                 run_id=run_id,
                 hypothesis_id=hyp_id or 0,
                 plan=(
@@ -91,19 +98,26 @@ class ResearchPlanner:
             session.add(row)
         session.commit()
 
-    def run_research_workflow(self, topic_query: str, k: int = 20) -> Dict:
+    def run_research_workflow(self, topic_query: str, k: int = 20, user_id: str = None) -> Dict:
+        # Use instance user_id if none provided
+        if user_id is None:
+            user_id = self.user_id
+            
+        if user_id is None:
+            raise ValueError("user_id is required for user isolation")
+            
         run_id = str(uuid4())
         session: Session = SessionLocal()
         try:
-            self._ensure_corpus(session, topic_query, k)
+            self._ensure_corpus(session, topic_query, k, user_id)
 
-            self.logs.append(f"Clustering {k} papers for topic '{topic_query}'")
-            clusters: List[Cluster] = self.cluster_agent.run(run_id=run_id, session=session, topic=topic_query, limit=k)
+            self.logs.append(f"Clustering {k} papers for topic '{topic_query}' (user: {user_id})")
+            clusters: List[Cluster] = self.cluster_agent.run(run_id=run_id, session=session, topic=topic_query, limit=k, user_id=user_id)
             summaries: List[ClusterSummary] = self.summarizer_agent.run(run_id=run_id, session=session, clusters=clusters)
             hypotheses: List[HypothesisOut] = self.hypothesis_agent.run(run_id=run_id, summaries=summaries)
             plans: List[ExperimentPlanOut] = self.experiment_agent.run(run_id=run_id, hypotheses=hypotheses)
 
-            self.persist_all(session, run_id, clusters, hypotheses, plans)
+            self.persist_all(session, run_id, user_id, clusters, hypotheses, plans)
 
             return {
                 "run_id": run_id,

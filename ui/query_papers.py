@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.vector_store import vector_store_manager
 from core.rag_pipeline import answer_query
+from core.user_manager import user_manager
 from utils.logger import logger
 from utils.config import config
 
@@ -14,6 +15,16 @@ from utils.config import config
 def show_query_papers_page():
     st.header("❓ Query Papers (RAG)")
     st.markdown("---")
+    
+    # Get current user
+    current_user_id = user_manager.get_current_user_id()
+    current_username = user_manager.get_current_username()
+    
+    # Show user context
+    if current_username:
+        st.info(f"🔍 Searching in **{current_username}'s** paper collection")
+    else:
+        st.info(f"🔍 Searching in your paper collection (User ID: {current_user_id[:8]}...)")
 
     question = st.text_input("Ask a question about your stored papers:", placeholder="e.g., What are key innovations in UNet variants?")
     k = st.slider("Top-k contexts", 1, 10, config.RETRIEVER_K)
@@ -25,7 +36,8 @@ def show_query_papers_page():
         
         with st.spinner("Retrieving and generating answer..."):
             try:
-                retriever = vector_store_manager.get_retriever(k=k)
+                # Get user-specific retriever
+                retriever = vector_store_manager.get_retriever(user_id=current_user_id, k=k)
                 result = answer_query(question, retriever, k=k)
                 
                 st.subheader("Answer")
@@ -50,4 +62,4 @@ def show_query_papers_page():
                         st.markdown("---")
             except Exception as e:
                 st.error(f"❌ RAG error: {e}")
-                logger.error(f"RAG error: {e}")
+                logger.error(f"RAG error for user {current_user_id}: {e}")

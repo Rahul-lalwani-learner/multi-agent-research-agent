@@ -11,12 +11,21 @@ from core.db import SessionLocal
 from core.models import Paper, Chunk
 from core.vector_store import vector_store_manager
 from core.pdf_parser import extract_text_chunks
+from core.user_manager import user_manager
 from utils.logger import logger
 
 
 def show_upload_paper_page():
     st.header("📄 Upload PDF → Parse → Embed")
     st.markdown("---")
+    
+    # Show current user info
+    user_id = user_manager.get_current_user_id()
+    username = user_manager.get_current_username()
+    if username:
+        st.info(f"📄 Uploading for: **{username}** (ID: `{user_id[:8]}...`)")
+    else:
+        st.info(f"📄 User ID: `{user_id[:8]}...`")
 
     uploaded = st.file_uploader("Choose a PDF file", type=["pdf"]) 
     title_input = st.text_input("Title (optional)")
@@ -36,6 +45,7 @@ def show_upload_paper_page():
                 try:
                     # Create or reuse a Paper record (source=upload)
                     paper = Paper(
+                        user_id=user_id,  # Add user_id for isolation
                         arxiv_id=None,
                         title=title_input or uploaded.name,
                         authors=authors_input,
@@ -57,6 +67,7 @@ def show_upload_paper_page():
                     ids = []
                     for idx, text in enumerate(chunks):
                         chunk = Chunk(
+                            user_id=user_id,  # Add user_id for isolation
                             paper_id=paper.id,
                             order=idx,
                             text=text,
@@ -65,6 +76,7 @@ def show_upload_paper_page():
                         session.flush()
 
                         meta = {
+                            "user_id": user_id,  # Add user_id to metadata
                             "paper_id": paper.id,
                             "arxiv_id": paper.arxiv_id,
                             "title": paper.title,
@@ -74,7 +86,8 @@ def show_upload_paper_page():
                         chroma_ids = vector_store_manager.add_texts(
                             texts=[text],
                             metadatas=[meta],
-                            ids=[f"paper-{paper.id}-chunk-{idx}"]
+                            ids=[f"paper-{paper.id}-chunk-{idx}"],
+                            user_id=user_id  # Pass user_id to vector store
                         )
                         if chroma_ids:
                             chunk.chroma_doc_id = chroma_ids[0]
