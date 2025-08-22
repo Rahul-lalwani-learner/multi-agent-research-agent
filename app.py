@@ -12,6 +12,7 @@ from ui.test_embeddings import show_test_embeddings_page
 from ui.fetch_arxiv import show_fetch_arxiv_page
 from ui.upload_paper import show_upload_paper_page
 from ui.query_papers import show_query_papers_page
+from ui.agent_workflow import show_agent_workflow_page as show_agent_workflow_page_impl
 
 # Page configuration
 st.set_page_config(
@@ -86,7 +87,7 @@ def main():
     elif page == "❓ Query Papers":
         show_query_papers_page()
     elif page == "🤖 Agent Workflow":
-        show_agent_workflow_page()
+        show_agent_workflow_page_impl()
 
 def show_home_page():
     st.header("Welcome to the Research Assistant")
@@ -143,14 +144,8 @@ def show_test_phase2_page():
     show_test_embeddings_page()
 
 def show_agent_workflow_page():
-    st.header("🤖 Multi-Agent Workflow")
-    st.info("This feature will be implemented in Phase 6")
-    
-    topic = st.text_input("Research Topic", placeholder="e.g., 'machine learning in healthcare'")
-    paper_limit = st.slider("Number of Papers", 5, 50, 20)
-    
-    if st.button("Run Workflow"):
-        st.info("Multi-agent workflow will be implemented in Phase 6")
+    # Backward-compatible wrapper
+    show_agent_workflow_page_impl()
 
 if __name__ == "__main__":
     main()

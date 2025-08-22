@@ -24,7 +24,10 @@ class Config:
     # Text Processing
     CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1200"))
     CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
-    
+    # LLM
+    LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash")
+    LLM_RETRIES = int(os.getenv("LLM_RETRIES", "3"))
+    LLM_RETRY_DELAY = float(os.getenv("LLM_RETRY_DELAY", "1.5"))
     # RAG
     RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
     
