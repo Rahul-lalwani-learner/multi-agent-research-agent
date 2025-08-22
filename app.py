@@ -9,6 +9,8 @@ from utils.config import config, validate_config
 from utils.logger import logger
 from core.db import init_db, test_db_connection
 from ui.test_embeddings import show_test_embeddings_page
+from ui.fetch_arxiv import show_fetch_arxiv_page
+from ui.upload_paper import show_upload_paper_page
 
 # Page configuration
 st.set_page_config(
@@ -64,7 +66,6 @@ def main():
         from core.embeddings import embedding_manager
         from core.vector_store import vector_store_manager
         
-        # Show Phase 2 status as "Ready" - will be tested when actually used
         st.sidebar.info("🔄 Embeddings Ready (lazy init)")
         st.sidebar.info("🔄 ChromaDB Ready (lazy init)")
             
@@ -80,7 +81,7 @@ def main():
     elif page == "📥 Fetch ArXiv":
         show_fetch_arxiv_page()
     elif page == "📄 Upload PDF":
-        show_upload_pdf_page()
+        show_upload_paper_page()
     elif page == "❓ Query Papers":
         show_query_papers_page()
     elif page == "🤖 Agent Workflow":
@@ -120,38 +121,18 @@ def show_home_page():
         **Quick Start:**
         1. Set up your `.env` file with API keys
         2. Fetch some papers from ArXiv
-        3. Try the RAG Q&A feature
-        4. Run the multi-agent workflow
+        3. Upload a PDF to parse & embed
+        4. Try the RAG Q&A feature
+        5. Run the multi-agent workflow
         """)
         
         st.warning("""
-        **Note**: This is Phase 2 of development. 
-        Embeddings and vector storage are now implemented.
+        **Note**: Phase 3 (ArXiv ingestion) and Phase 4 (PDF parsing/upload) are now available.
         """)
 
-def show_fetch_arxiv_page():
-    st.header("📥 Fetch Papers from ArXiv")
-    st.info("This feature will be implemented in Phase 3")
-    
-    # Placeholder form
-    with st.form("arxiv_fetch"):
-        query = st.text_input("Search Query", placeholder="e.g., 'machine learning' OR 'deep learning'")
-        max_results = st.slider("Maximum Results", 1, 50, 10)
-        load_pdfs = st.checkbox("Download and parse PDFs (slower)", value=False)
-        
-        submitted = st.form_submit_button("Fetch Papers")
-        
-        if submitted:
-            st.info("ArXiv fetching will be implemented in Phase 3")
-
-def show_upload_pdf_page():
-    st.header("📄 Upload PDF")
-    st.info("This feature will be implemented in Phase 4")
-    
-    uploaded_file = st.file_uploader("Choose a PDF file", type=['pdf'])
-    
-    if uploaded_file is not None:
-        st.info("PDF parsing and embedding will be implemented in Phase 4")
+# def show_upload_pdf_page():
+    # Overridden by ui.upload_paper.show_upload_paper_page
+    # pass
 
 def show_query_papers_page():
     st.header("❓ Query Papers")
