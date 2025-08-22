@@ -11,6 +11,7 @@ from core.db import init_db, test_db_connection
 from ui.test_embeddings import show_test_embeddings_page
 from ui.fetch_arxiv import show_fetch_arxiv_page
 from ui.upload_paper import show_upload_paper_page
+from ui.query_papers import show_query_papers_page
 
 # Page configuration
 st.set_page_config(
@@ -122,26 +123,21 @@ def show_home_page():
         1. Set up your `.env` file with API keys
         2. Fetch some papers from ArXiv
         3. Upload a PDF to parse & embed
-        4. Try the RAG Q&A feature
+        4. Ask questions on the Query page
         5. Run the multi-agent workflow
         """)
         
         st.warning("""
-        **Note**: Phase 3 (ArXiv ingestion) and Phase 4 (PDF parsing/upload) are now available.
+        **Note**: Phase 5 (RAG Q&A) is now available.
         """)
 
 # def show_upload_pdf_page():
-    # Overridden by ui.upload_paper.show_upload_paper_page
-    # pass
+#     # Overridden by ui.upload_paper.show_upload_paper_page
+#     pass
 
-def show_query_papers_page():
-    st.header("❓ Query Papers")
-    st.info("This feature will be implemented in Phase 5")
-    
-    question = st.text_input("Ask a question about your research papers:")
-    
-    if st.button("Get Answer"):
-        st.info("RAG-powered Q&A will be implemented in Phase 5")
+# def show_query_papers_page():
+#     # Overridden by ui.query_papers.show_query_papers_page
+#     pass
 
 def show_test_phase2_page():
     show_test_embeddings_page()
