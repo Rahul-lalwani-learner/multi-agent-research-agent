@@ -11,7 +11,7 @@ from core.agents.planner_agent import ResearchPlanner
 
 
 def show_agent_workflow_page():
-    st.header("🤖 Multi-Agent Workflow")
+    st.header("🔥 Multi-Agent Workflow")
     st.markdown("---")
 
     topic = st.text_input("Topic / scope", placeholder="e.g., foundation models for medical imaging")

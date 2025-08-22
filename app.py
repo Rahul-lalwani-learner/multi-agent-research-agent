@@ -80,7 +80,22 @@ def main():
         if st.button("📄 Upload", use_container_width=True):
             st.session_state.nav_page = "📄 Upload PDF"
         if st.button("🤖 Agents", use_container_width=True):
-            st.session_state.nav_page = "🤖 Agent Workflow"
+            st.session_state.nav_page = "🔥 Agent Workflow"
+
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🗑️ Remove ALL Data", use_container_width=True):
+        from core.db_utils import delete_all_data
+        from core.vector_utils import delete_all_vector_store
+        sql_ok = delete_all_data()
+        vector_ok = delete_all_vector_store()
+        if sql_ok and vector_ok:
+            st.sidebar.success("All data removed from SQL and vector store.")
+        elif not sql_ok and not vector_ok:
+            st.sidebar.error("Failed to remove data from both SQL and vector store.")
+        elif not sql_ok:
+            st.sidebar.error("Failed to remove data from SQL database.")
+        elif not vector_ok:
+            st.sidebar.error("Failed to remove data from vector store.")
 
     page = st.session_state.nav_page
     
@@ -148,7 +163,7 @@ def main():
         show_upload_paper_page()
     elif page == "❓ Query Papers":
         show_query_papers_page()
-    elif page == "🤖 Agent Workflow":
+    elif page == "🔥 Agent Workflow":
         show_agent_workflow_page_impl()
 
 def show_home_page():
@@ -164,7 +179,7 @@ def show_home_page():
         
         📚 **Smart Storage**: Store papers and their metadata in PostgreSQL, with full-text embeddings in ChromaDB
         
-        🤖 **Multi-Agent Analysis**: Run an intelligent pipeline that:
+        🔥 **Multi-Agent Analysis**: Run an intelligent pipeline that:
         - Clusters papers by topic
         - Generates structured summaries
         - Proposes testable hypotheses
